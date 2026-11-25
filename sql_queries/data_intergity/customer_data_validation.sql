@@ -86,7 +86,7 @@ select 'Email @sign' as test_name,
         from (
          select email 
          from customer_new
-         where email not like '%@%'
+         where email not like '%@%' or email is null
         )) > 0
         then 'fail'
         else 'pass'
@@ -99,8 +99,89 @@ select 'Email @sign' as test_name,
         from (
          select email 
          from customer_new
-         where email not like '%.%'
+         where email not like '%.%' or email is null
         )) > 0
         then 'fail'
         else 'pass'
-        end as email_format_missing_period;
+        end as email_format_missing_period
+
+union all
+
+select 'Email missing email service name' as test_name,
+   case when(select count(*)
+        from (
+         select email 
+         from customer_new
+         where email not like '%@_%.%' or email is null
+        )) > 0
+        then 'fail'
+        else 'pass'
+        end as email_missing_service_provider
+
+union all
+
+select 'Email @. together ' as test_name,
+   case when(select count(*)
+        from (
+         select email 
+         from customer_new
+         where email like '%@._%' or email is null
+        )) > 0
+        then 'fail'
+        else 'pass'
+        end as email_format_period_next_to_at
+
+union all
+
+select 'Email two periods together together ' as test_name,
+   case when(select count(*)
+        from (
+         select email 
+         from customer_new
+         where email like '%..%' or email is null
+        )) > 0
+        then 'fail'
+        else 'pass'
+        end as email_format_period_next_to_a_other
+
+union all
+
+select 'Email has a suffix' as test_name,
+   case when(select count(*)
+        from (
+         select email 
+         from customer_new
+         where email not like '%.___%' or email is null
+        )) > 0
+        then 'fail'
+        else 'pass'
+        end as email_has_suffix
+
+union all
+
+select 'Email has a trailing or leading white space' as test_name,
+   case when(select count(*)
+        from (
+         select email 
+         from customer_new
+         where email <> trim(email) or email is null
+        )) > 0
+        then 'fail'
+        else 'pass'
+        end as email_has_trailing/leading_white_space
+
+union all
+
+select 'Duplicate email' as test_name,
+   case when(select count(*)
+        from (
+         select lower(email) 
+         from customer_new
+         where email is not null
+         group by lower(email)
+         having count(*) > 1
+        )duplicate
+        ) > 0
+        then 'fail'
+        else 'pass'
+        end as duplicate_email;
